@@ -4,6 +4,8 @@ from itertools import permutations
 from vertex import vertex
 from threading import Thread
 
+INPUT_DIR = 'input/'
+
 
 def build_graph(graph_size, pick_edge_prob, udp_port, tcp_port):
     graph = {}
@@ -37,7 +39,7 @@ def vertices_input(graph, udp_port_master):
         out_neighbors = graph[v]['out_neighbors']
 
         input_file_name = 'input_vertex_' + str(v)+'.txt'
-        input_file = open(input_file_name, 'w')
+        input_file = open(INPUT_DIR + input_file_name, 'w')
 
         input_file.write(str(len(graph)) + '\n')
         input_file.write(str(udp_port_master) + '\n')
