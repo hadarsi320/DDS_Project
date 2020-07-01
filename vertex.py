@@ -1,3 +1,3 @@
 
-def vertex():
+def vertex(vertex_id):
     pass
