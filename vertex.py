@@ -3,12 +3,17 @@ from socket import AF_INET, SOCK_STREAM, SOCK_DGRAM, SHUT_RDWR, SHUT_WR
 from threading import Thread, Lock
 from math import log2, ceil
 
-FILE_DIR = 'input/'
+# TODO update this code so it works out of the box
+INPUT_DIR = 'input/'
+OUTPUT_DIR = 'output/'
 
 
 def vertex(ID):
+    next_msg = f'next_{ID}'
+    done_msg = f'done_{ID}'
+
     input_file_name = 'input_vertex_' + str(ID) + '.txt'
-    with open(FILE_DIR + input_file_name, 'r') as input_file:
+    with open(INPUT_DIR + input_file_name, 'r') as input_file:
         data = input_file.read().split('\n')
     graph_size = data[0]
     master = (int(data[1]), data[2])
@@ -24,8 +29,35 @@ def vertex(ID):
     neighbors = []
     for i in range(7, len(data)-2, 2):
         neighbors.append((int(data[i]), data[i+1]))
-
     color = 0 if is_root else ID
+
+    # Listens to neighbours
+    tcp_socket = socket(AF_INET, SOCK_STREAM)  # TCP socket
+    tcp_socket.bind(('', tcp_port))
+
+    # Listens to master for round
+    rounds_lock = Lock()
+    master_listen_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
+    master_listen_socket.bind(('', udp_port))
+
+    # Sends round end to master
+    master_send_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
+
+    current_round = None
+    while True:
+        data, addr = master_listen_socket.recvfrom(4096)
+        assert addr == master[1]
+        if data.decode() == 'DIE':
+            break
+        elif data.decode() == '0':
+            current_round = int(data.decode())
+            tcp_socket.listen(len(neighbors))
+            master_send_socket.send(('next'+str(id)))
+        elif len(color) > 3:
+            pass
+        else:
+            pass
+    master_listen_socket.close()
 
 
 def recolor(color, parent_color):
