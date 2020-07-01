@@ -1,10 +1,33 @@
+
 TreeColoring_8: presented from the perspective of node v in V
-1. if deg_in(v)=0 then
+1.  if deg_in(v)=0 then
 2.      c(v) is 0
 3.      send c(v) to children and stop
-4. if first round then:
+4.  if first round then:
 5.      c(v) is ID(v)
 6.      send c(v) to children and stop
-7. repeat:
+7.  repeat:
 8.      cv is c(v), cp is c(p(v))   (c(p(v)) received by msg from p(v)
-9.      index bit string cv and cp
+9.      index bit string cv and cp right to left by i=0,1,...
+10.     iv is min{i>=0 | cv(i) != cp(i)}
+11.     c(v) is iv (encoded as bit string) followed by cv(iv)
+12.     send c(v) to children
+13. until c(u) is in {0,...,7} for all u in V
+
+
+ShiftDown: presented from the perspective of node v in V
+1.  if v is root then
+2.      c(v) is new color in {0,1,2}
+3.  else:
+4.      c(v) is c(p(v))
+5.  send c(v) to children
+
+
+TreeColoring_3: presented from the perspective of node v in V
+1.  run TreeColoring_8
+2.  send c(v) to children
+3.  for x =7,6,5,4,3 dp
+4.      run ShiftDown
+5.      if c(v) = x then
+6.          c(v) is minimal non-conflicting color
+7.      send c(v) to children
