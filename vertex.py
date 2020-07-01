@@ -11,9 +11,13 @@ def vertex(ID):
     with open(FILE_DIR + input_file_name, 'r') as input_file:
         data = input_file.read().split('\n')
     graph_size = data[0]
-    master = (int(data[1]), data[2])
+
+    master = (data[2], int(data[1]))
+    master_conn = socket(AF_INET, SOCK_DGRAM)
+
     udp_port = data[3]
     tcp_port = data[4]
+
     is_root = True  # a vertex is a root if it has no parent
     parent = None
     if data[5] != 'None' and data[6] != 'None':
@@ -25,8 +29,21 @@ def vertex(ID):
     for i in range(7, len(data)-2, 2):
         neighbors.append((int(data[i]), data[i+1]))
 
+
+
     color = 0 if is_root else ID
 
+def listen(neighbors):
+    out_neighbor_connections = []
+    connection = socket()
+    connection.listen(len(neighbors))
+
+    for neighbor_port, neighbor_ip in neighbors:
+        connection.bind(('0.0.0.0', neighbor_port))
+        out_neighbor_socket, neighbor_address = connection.accept()
+
+
+    pass
 
 def recolor(color, parent_color):
     """
