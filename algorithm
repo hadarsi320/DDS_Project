@@ -1,0 +1,10 @@
+TreeColoring_8: presented from the perspective of node v in V
+1. if deg_in(v)=0 then
+2.      c(v) is 0
+3.      send c(v) to children and stop
+4. if first round then:
+5.      c(v) is ID(v)
+6.      send c(v) to children and stop
+7. repeat:
+8.      cv is c(v), cp is c(p(v))   (c(p(v)) received by msg from p(v)
+9.      index bit string cv and cp
