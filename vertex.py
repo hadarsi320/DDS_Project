@@ -46,6 +46,7 @@ def vertex(ID):
     master_send_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
 
     current_round = None
+    x = 8
     while True:
         data, addr = master_listen_socket.recvfrom(4096)
         # assert addr[0] == master[0]
@@ -80,6 +81,14 @@ def vertex(ID):
                 master_send_socket.sendto(done_msg, master)
             else:
                 # TreeColoring 3
+                x -= 1
+                if parent:
+                    color = parent_color
+                else:
+                    pass
+                if x == 3:
+                    pass
+
                 master_send_socket.sendto(done_msg, master)
     master_listen_socket.close()
 
