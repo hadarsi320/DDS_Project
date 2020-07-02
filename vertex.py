@@ -50,6 +50,7 @@ def vertex(ID):
     master_send_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
 
     current_round = None
+    output_file_lock = Lock()
     while True:
         data, addr = master_listen_socket.recvfrom(4096)
         # assert addr[0] == master[0]
@@ -76,28 +77,42 @@ def vertex(ID):
 
         else:
             # Send color to children
-            send_color_threads = [Thread(target=send_color, args=(child_socket, color))
-                                  for child_socket in children_sockets]
+
+            send_color_threads = [Thread(target=send_color,
+                                         args=(child_socket, color, child[1], ID, OUTPUT_DIR, output_file_lock))
+                                  for child, child_socket in zip(children, children_sockets)]
             for thread in send_color_threads:
                 thread.start()
 
             # Get color from parent
             parent_color = None
             if parent:
+                # TODO message len
                 parent_color = parent_socket.recv(4096).decode()
 
             if len(color) > 3:
                 # TreeColoring 8
                 color = recolor(color, parent_color)
-                master_send_socket.sendto(done_msg, master)
+                master_send_socket.sendto(next_msg, master)
             else:
                 # TreeColoring 3
-                master_send_socket.sendto(done_msg, master)
+                master_send_socket.sendto(next_msg, master)
     master_listen_socket.close()
 
+    write_your_color(ID, color)
 
-def send_color(tcp_socket: socket, color: str):
+
+def send_color(tcp_socket: socket, color: str, port: int, ID: str, output_dir: str, file_lock: Lock):
     tcp_socket.send(color.encode())
+    file_lock.acquire()
+    with open(output_dir + 'output_vertex_' + ID + '.txt', 'a') as output_file:
+        output_file.write(f'{color}_{port}')
+    file_lock.release()
+
+
+def write_your_color(ID: str, color: str):
+    with open(f'color_vertex_{ID}.txt', 'w') as color_file:
+        color_file.write(color)
 
 
 def recolor(color, parent_color=None):
