@@ -15,7 +15,7 @@ def vertex(ID):
     input_file_name = 'input_vertex_' + str(ID) + '.txt'
     with open(INPUT_DIR + input_file_name, 'r') as input_file:
         data = input_file.read().split('\n')
-    graph_size = data[0]
+    graph_size = int(data[0])
     master = (data[2], int(data[1]))
     udp_port = int(data[3])
     tcp_port = int(data[4])
@@ -28,50 +28,54 @@ def vertex(ID):
     for i in range(7, len(data) - 2, 2):
         children.append((data[i + 1], int(data[i])))
     color = ID if parent else '0'
+    color = color.zfill(ceil(log2(graph_size)) + 1)
+
+    socket_list = []
 
     # Listens to parent
-    parent_socket = socket(AF_INET, SOCK_STREAM)  # TCP socket
-    parent_socket.bind(('', tcp_port))
-    parent_connection = [None]
-    parent_connection_lock = Lock()
+    if parent:
+        parent_socket = socket(AF_INET, SOCK_STREAM)  # TCP socket
+        socket_list.append(parent_socket)
+        parent_socket.bind(('', tcp_port))
+        parent_connection = [None]
+        parent_connection_lock = Lock()
 
     # Sends my color to children
     children_sockets = [socket(AF_INET, SOCK_STREAM) for child in children]
+    socket_list += children_sockets
 
     # Listens to master for round
     master_listen_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
     master_listen_socket.bind(('', udp_port))
+    socket_list.append(master_listen_socket)
 
     # Sends round end to master
     master_send_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
+    socket_list.append(master_send_socket)
 
-    current_round = None
     shift_down = True
-    done = False
-    x = 8
+    done_flag = False
+    x = 8  # From the algorithm
     output_file_lock = Lock()
-    while True:
-        data, addr = master_listen_socket.recvfrom(4096)
-        # assert addr[0] == master[0]
-        if data.decode() == 'DIE':
-            break
-
-        current_round = int(data.decode())
-        print(f'Round {current_round}')
-
+    while not done_flag:
+        data, _ = master_listen_socket.recvfrom(4096)
         if data.decode() == '1':
-            parent_socket.listen(1)
-            # TODO what if is root
+            if parent:
+                parent_socket.listen(1)
             master_send_socket.sendto(next_msg, master)
 
         elif data.decode() == '2':
-            # TODO what if vertex has no parent?
-            parent_connect_thread = Thread(target=accept_connection,
-                                           args=(parent_socket, parent_connection, parent_connection_lock))
-            parent_connect_thread.start()
+            if parent:
+                # Accept connection from parent
+                parent_connect_thread = Thread(target=accept_connection,
+                                               args=(parent_socket, parent_connection))
+                parent_connect_thread.start()
+            # Connect to children
             for child, child_socket in zip(children, children_sockets):
                 child_socket.connect(child)
-            parent_connect_thread.join()
+            if parent:
+                parent_connect_thread.join()
+                socket_list += parent_connection
             master_send_socket.sendto(next_msg, master)
 
         else:
@@ -96,36 +100,39 @@ def vertex(ID):
                 # TreeColoring 3
                 if shift_down:
                     children_color = color
-                    color = parent_color if parent else (color+1) % 3
+                    color = parent_color if parent else (color + 1) % 3
                     shift_down = False
                 else:
                     x -= 1
                     if color == x:
                         color = min_non_conflicting_color(children_color, parent_color)
                     if x == 3:
-                        done = True
+                        done_flag = True
                     shift_down = True
 
-                if done:
+                if done_flag:
                     master_send_socket.sendto(done_msg, master)
                 else:
                     master_send_socket.sendto(next_msg, master)
-    master_listen_socket.close()
 
-    write_your_color(ID, color)
+    # TODO check correction of coloring
+    write_color(ID, color)
+
+    for close_socket in socket_list:
+        close_socket.close()
 
 
 def send_color(tcp_socket: socket, color: str, port: int, ID: str, output_dir: str, file_lock: Lock):
     tcp_socket.send(color.encode())
     file_lock.acquire()
     with open(output_dir + 'output_vertex_' + ID + '.txt', 'a') as output_file:
-        output_file.write(f'{color}_{port}')
+        output_file.write(f'{color}_{port}\n')
     file_lock.release()
 
 
-def write_your_color(ID: str, color: str):
+def write_color(ID: str, color: str):
     with open(f'color_vertex_{ID}.txt', 'w') as color_file:
-        color_file.write(color)
+        color_file.write(str(int(color, 2)))
 
 
 def recolor(color, parent_color=None):
@@ -152,11 +159,9 @@ def recolor(color, parent_color=None):
     return new_color.zfill(new_color_len)
 
 
-def accept_connection(tcp_socket: socket, socket_list: list, socket_list_lock: Lock):
+def accept_connection(tcp_socket: socket, socket_list: list):
     connection_socket, _ = tcp_socket.accept()
-    socket_list_lock.acquire()
     socket_list[0] = connection_socket
-    socket_list_lock.release()
 
 
 def min_non_conflicting_color(children_color, parent_color):
@@ -165,23 +170,5 @@ def min_non_conflicting_color(children_color, parent_color):
             return i
 
 
-def main():
-    pass
-
-
 if __name__ == '__main__':
-    s = socket()
-    s.bind(('', 5001))
-    s.listen(2)
-
-    s1 = socket()
-    s1.connect(('127.0.0.1', 5001))
-    s2 = socket()
-    s2.connect(('127.0.0.1', 5001))
-
-    res1 = s.accept()
-    res2 = s.accept()
-    pass
-    s.close()
-    s1.close()
-    # vertex('0011')
+    vertex('00101')
