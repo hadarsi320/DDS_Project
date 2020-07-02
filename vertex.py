@@ -27,7 +27,7 @@ def vertex(ID):
     children = []
     for i in range(7, len(data) - 2, 2):
         children.append((data[i + 1], int(data[i])))
-    color = ID if parent else 0
+    color = ID if parent else '0'
 
     # Listens to parent
     parent_socket = socket(AF_INET, SOCK_STREAM)  # TCP socket
@@ -77,8 +77,13 @@ def vertex(ID):
         else:
             # Send color to children
             # Get color from parent
+            parent_color = None
             if len(color) > 3:
                 # TreeColoring 8
+                if parent:
+                    color = recolor(color, parent_color)
+                else:
+                    color = recolor(color)
                 master_send_socket.sendto(done_msg, master)
             else:
                 # TreeColoring 3
