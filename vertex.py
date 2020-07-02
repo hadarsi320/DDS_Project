@@ -46,6 +46,8 @@ def vertex(ID):
     master_send_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
 
     current_round = None
+    shift_down = True
+    done = False
     x = 8
     while True:
         data, addr = master_listen_socket.recvfrom(4096)
@@ -81,15 +83,22 @@ def vertex(ID):
                 master_send_socket.sendto(done_msg, master)
             else:
                 # TreeColoring 3
-                x -= 1
-                if parent:
-                    color = parent_color
+                if shift_down:
+                    children_color = color
+                    color = parent_color if parent else (color+1) % 3
+                    shift_down = False
                 else:
-                    pass
-                if x == 3:
-                    pass
+                    x -= 1
+                    if color == x:
+                        color = min_non_conflicting_color(children_color, parent_color)
+                    if x == 3:
+                        done = True
+                    shift_down = True
 
-                master_send_socket.sendto(done_msg, master)
+                if done:
+                    master_send_socket.sendto(done_msg, master)
+                else:
+                    master_send_socket.sendto(next_msg, master)
     master_listen_socket.close()
 
 
@@ -122,6 +131,12 @@ def accept_connection(tcp_socket: socket, socket_list: list, socket_list_lock: L
     socket_list_lock.acquire()
     socket_list[0] = connection_socket
     socket_list_lock.release()
+
+
+def min_non_conflicting_color(children_color, parent_color):
+    for i in range(3):
+        if children_color != i and parent_color != i:
+            return i
 
 
 def main():
