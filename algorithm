@@ -31,3 +31,9 @@ TreeColoring_3: presented from the perspective of node v in V
 5.      if c(v) = x then
 6.          c(v) is minimal non-conflicting color
 7.      send c(v) to children
+
+
+Every round:
+1. Send color to children
+2. Receive parent color
+3. Recalculate color
