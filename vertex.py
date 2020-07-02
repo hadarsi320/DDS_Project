@@ -38,7 +38,6 @@ def vertex(ID):
         socket_list.append(parent_socket)
         parent_socket.bind(('', tcp_port))
         parent_connection = [None]
-        parent_connection_lock = Lock()
 
     # Sends my color to children
     children_sockets = [socket(AF_INET, SOCK_STREAM) for child in children]
@@ -55,7 +54,7 @@ def vertex(ID):
 
     shift_down = True
     done_flag = False
-    x = 8  # From the algorithm
+    x = 7  # From the algorithm
     output_file_lock = Lock()
     while not done_flag:
         data, _ = master_listen_socket.recvfrom(4096)
@@ -90,7 +89,7 @@ def vertex(ID):
             parent_color = None
             if parent:
                 # TODO message len
-                parent_color = parent_socket.recv(4096).decode()
+                parent_color = parent_connection[0].recv(4096).decode()
 
             if len(color) > 3:
                 # TreeColoring 8
@@ -103,12 +102,13 @@ def vertex(ID):
                     color = parent_color if parent else (color + 1) % 3
                     shift_down = False
                 else:
-                    x -= 1
                     if color == x:
                         color = min_non_conflicting_color(children_color, parent_color)
                     if x == 3:
                         done_flag = True
-                    shift_down = True
+                    else:
+                        shift_down = True
+                        x -= 1
 
                 if done_flag:
                     master_send_socket.sendto(done_msg, master)
