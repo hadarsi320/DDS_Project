@@ -80,10 +80,7 @@ def vertex(ID):
             parent_color = None
             if len(color) > 3:
                 # TreeColoring 8
-                if parent:
-                    color = recolor(color, parent_color)
-                else:
-                    color = recolor(color)
+                color = recolor(color, parent_color)
                 master_send_socket.sendto(done_msg, master)
             else:
                 # TreeColoring 3
