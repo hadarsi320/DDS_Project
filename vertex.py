@@ -38,10 +38,6 @@ def vertex(ID):
     # Sends my color to children
     children_sockets = [socket(AF_INET, SOCK_STREAM) for child in children]
 
-    # tcp_socket = socket(AF_INET, SOCK_STREAM)  # TCP socket
-    # send_socket_list = []
-    # send_socket_lock = Lock()
-
     # Listens to master for round
     master_listen_socket = socket(AF_INET, SOCK_DGRAM)  # UDP socket
     master_listen_socket.bind(('', udp_port))
