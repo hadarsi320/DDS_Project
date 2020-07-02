@@ -55,6 +55,7 @@ def vertex(ID):
         # assert addr[0] == master[0]
         if data.decode() == 'DIE':
             break
+
         current_round = int(data.decode())
         print(f'Round {current_round}')
 
@@ -73,24 +74,31 @@ def vertex(ID):
             parent_connect_thread.join()
             master_send_socket.sendto(next_msg, master)
 
-        elif len(color) > 3:
-            master_send_socket.sendto(done_msg, master)
-
         else:
-            master_send_socket.sendto(done_msg, master)
+            # Send color to children
+            # Get color from parent
+            if len(color) > 3:
+                # TreeColoring 8
+                master_send_socket.sendto(done_msg, master)
+            else:
+                # TreeColoring 3
+                master_send_socket.sendto(done_msg, master)
     master_listen_socket.close()
 
 
-def recolor(color, parent_color):
+def recolor(color, parent_color=None):
     """
     :param color: current node's color
     :param parent_color: node's parent's color
     :return: new color computed according to the algorithm
     """
+    n = len(color)  # perhaps n+1
+    new_color_len = ceil(log2(n)) + 1
+    if parent_color is None:
+        return ''.zfill(new_color_len)
     assert len(color) == len(parent_color)
     color = color[::-1]
     parent_color = parent_color[::-1]
-    n = len(color)  # perhaps n+1
     i_v = None
     for i in range(len(color)):
         if color[i] != parent_color[i]:
@@ -98,8 +106,8 @@ def recolor(color, parent_color):
             break
     assert i_v is not None
     new_color = bin(i_v)[2:] + str(color[i_v])
-    assert len(new_color) <= ceil(log2(n)) + 1
-    return new_color.zfill(ceil(log2(n)) + 1)
+    assert len(new_color) <= new_color_len
+    return new_color.zfill(new_color_len)
 
 
 def accept_connection(tcp_socket: socket, socket_list: list, socket_list_lock: Lock):
