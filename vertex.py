@@ -76,7 +76,14 @@ def vertex(ID):
 
         else:
             # Send color to children
+            send_color_threads = [Thread(target=send_color, args=(child_socket, color))
+                                  for child_socket in children_sockets]
+            for thread in send_color_threads:
+                thread.start()
             # Get color from parent
+            if parent:
+                parent_color = parent_socket.recv(4096).decode()
+
             if len(color) > 3:
                 # TreeColoring 8
                 master_send_socket.sendto(done_msg, master)
@@ -84,6 +91,10 @@ def vertex(ID):
                 # TreeColoring 3
                 master_send_socket.sendto(done_msg, master)
     master_listen_socket.close()
+
+
+def send_color(tcp_socket: socket, color: str):
+    tcp_socket.send(color.encode())
 
 
 def recolor(color, parent_color=None):
